@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Sharing Platform</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px 0;
+            margin-bottom: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            margin: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        input {
+            margin: 10px 0;
+            padding: 10px;
+            font-size: 16px;
+            width: 80%;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Welcome to HealthShare Cloud</h1>
+        <p>Your secure platform for medical file management</p>
+    </header>
+    <div class="container">
+        <h2>Select a Service</h2>
+
+        <!-- Upload Section -->
+        <h3>Upload File</h3>
+        <input type="file" id="fileInput" />
+        <input type="text" id="fileNameInput" placeholder="Enter file name (e.g., testfile.txt)" />
+        <button onclick="uploadFile()">Upload File</button>
+
+        <!-- Download Section -->
+        <h3>Download File</h3>
+        <input type="text" id="downloadFileName" placeholder="Enter file name to download" />
+        <button onclick="downloadFile()">Download File</button>
+    </div>
+
+    <script>
+        function uploadFile() {
+            const fileInput = document.getElementById("fileInput");
+            const fileNameInput = document.getElementById("fileNameInput");
+
+            if (!fileInput.files[0] || !fileNameInput.value) {
+                alert("Please select a file and provide a file name.");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const filename = fileNameInput.value || file.name; // Use provided filename or the uploaded file's name
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const fileContent = event.target.result; // Content of the file
+                const url = `https://je4u21oq6j.execute-api.us-east-1.amazonaws.com/dev/files`;
+
+                const headers = {
+                    "Accept": "*/*",
+                    "Accept-Encoding": "deflate, gzip",
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+                    "Host": "je4u21oq6j.execute-api.us-east-1.amazonaws.com",
+                    "Content-Type": "text/plain"
+                };
+
+                axios.post(`${url}?fileName=${filename}`, fileContent, {
+                    headers: headers
+                })
+                .then(function(response) {
+                    if (response.status === 200) {
+                        alert("File uploaded successfully!");
+                    } else {
+                        alert(`Error: ${response.status}, ${response.statusText}`);
+                    }
+                })
+                .catch(function(error) {
+                    alert(`Error: ${error.message}`);
+                });
+            };
+
+            reader.onerror = function() {
+                alert("Error reading file.");
+            };
+
+            reader.readAsText(file); // Read the content of the selected file
+        }
+
+        function downloadFile() {
+            const fileName = document.getElementById("downloadFileName").value;
+
+            if (!fileName) {
+                alert("Please provide a file name to download.");
+                return;
+            }
+
+            const xhr = new XMLHttpRequest();
+            xhr.open("GET", `https://je4u21oq6j.execute-api.us-east-1.amazonaws.com/dev/files?fileName=${encodeURIComponent(fileName)}`, true);
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    const response = JSON.parse(xhr.responseText);
+                    const base64EncodedContent = response.body;
+                    const decodedContent = atob(base64EncodedContent); // Decode the base64 string
+                    const blob = new Blob([decodedContent], { type: 'application/octet-stream' });
+                    const link = document.createElement("a");
+                    link.href = URL.createObjectURL(blob);
+                    link.download = fileName; // Use the filename provided by the user
+                    link.click();
+                    alert("File downloaded successfully!");
+                } else {
+                    alert("Failed to download file: " + xhr.statusText);
+                }
+            };
+
+            xhr.onerror = function() {
+                alert("Request failed. Please try again.");
+            };
+
+            // Send the request
+            xhr.send();
+        }
+    </script>
+</body>
+</html>
